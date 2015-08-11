@@ -1914,9 +1914,9 @@ hd_app_mgr_dbus_signal_handler (DBusConnection *conn,
                                   MCE_TKLOCK_MODE_SIG))
         {
           priv->unlocked = _hd_app_mgr_dbus_check_value (msg,
-                                           MCE_DEVICE_UNLOCKED);
+                                           MCE_TK_UNLOCKED);
         }
-      else if (dbus_message_is_signal (msg,
+/*      else if (dbus_message_is_signal (msg,
                                   MCE_SIGNAL_IF,
                                   MCE_DEVICE_ORIENTATION_SIG))
         {
@@ -1924,7 +1924,7 @@ hd_app_mgr_dbus_signal_handler (DBusConnection *conn,
                                            MCE_ORIENTATION_PORTRAIT);
 
           hd_app_mgr_update_portraitness(self);
-        }
+        }*/
     }
 #endif
 
@@ -1943,7 +1943,7 @@ hd_app_mgr_mce_activate_accel_if_needed (gboolean update_portraitness)
   extern gboolean hd_dbus_tklock_on;
   HdAppMgrPrivate *priv = HD_APP_MGR_GET_PRIVATE (the_app_mgr);
   DBusConnection *conn = NULL;
-#ifdef HAVE_DSME
+#ifdef HAVE_DSME_DISABLEDFORNOW
   DBusMessage *msg = NULL;
 #endif
   gboolean activate = !hd_dbus_tklock_on;
@@ -1968,17 +1968,17 @@ hd_app_mgr_mce_activate_accel_if_needed (gboolean update_portraitness)
     {
       hd_app_mgr_dbus_add_signal_match (conn, MCE_SIGNAL_IF,
                                         MCE_TKLOCK_MODE_SIG);
-      hd_app_mgr_dbus_add_signal_match (conn, MCE_SIGNAL_IF,
-                                        MCE_DEVICE_ORIENTATION_SIG);
+      /*hd_app_mgr_dbus_add_signal_match (conn, MCE_SIGNAL_IF,
+                                        MCE_DEVICE_ORIENTATION_SIG);*/
     }
   else
     {
       hd_app_mgr_dbus_remove_signal_match (conn, MCE_SIGNAL_IF,
                                            MCE_TKLOCK_MODE_SIG);
-      hd_app_mgr_dbus_remove_signal_match (conn, MCE_SIGNAL_IF,
-                                           MCE_DEVICE_ORIENTATION_SIG);
+      /*hd_app_mgr_dbus_remove_signal_match (conn, MCE_SIGNAL_IF,
+                                           MCE_DEVICE_ORIENTATION_SIG);*/
     }
-
+#ifdef DISABLED_FOR_NOW_HAHA
   msg = dbus_message_new_method_call (
           MCE_SERVICE,
           MCE_REQUEST_PATH,
@@ -2020,6 +2020,7 @@ hd_app_mgr_mce_activate_accel_if_needed (gboolean update_portraitness)
 
   g_debug ("%s: %s", __FUNCTION__, activate ? "enabled" : "disabled");
   priv->accel_enabled = activate;
+#endif
 #endif
 
   if (update_portraitness)
