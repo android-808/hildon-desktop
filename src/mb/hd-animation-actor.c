@@ -101,7 +101,7 @@ hd_animation_actor_client_message (XClientMessageEvent *xev, void *userdata)
       CM_DEBUG ("AnimationActor %p: position(x=%d, y=%d, depth=%d)\n",
 	       	self, x, y, depth);
       clutter_actor_set_position (actor, x, y);
-      clutter_actor_set_depth (actor, depth);
+      clutter_actor_set_z_position (actor, depth);
   }
   else if (xev->message_type == rotation_atom)
   {
@@ -121,10 +121,12 @@ hd_animation_actor_client_message (XClientMessageEvent *xev, void *userdata)
           default: clutter_axis = CLUTTER_Z_AXIS;
       }
 
-      clutter_actor_set_rotation (actor,
-                                  clutter_axis,
-                                  degrees,
-                                  x, y, z);
+      clutter_actor_set_pivot_point (actor,
+                                     x, y);
+      clutter_actor_set_pivot_point_z (actor, z);
+      clutter_actor_set_rotation_angle (actor,
+                                        clutter_axis,
+                                        degrees);
   }
   else if (xev->message_type == scale_atom)
   {
@@ -144,31 +146,19 @@ hd_animation_actor_client_message (XClientMessageEvent *xev, void *userdata)
       CM_DEBUG ("AnimationActor %p: anchor(gravity=%u, x=%d, y=%d)\n",
                self, gravity, x, y);
 
-      ClutterGravity clutter_gravity;
-
       switch (gravity)
       {
-	  case 1: clutter_gravity = CLUTTER_GRAVITY_NORTH; break;
-	  case 2: clutter_gravity = CLUTTER_GRAVITY_NORTH_EAST; break;
-	  case 3: clutter_gravity = CLUTTER_GRAVITY_EAST; break;
-	  case 4: clutter_gravity = CLUTTER_GRAVITY_SOUTH_EAST; break;
-	  case 5: clutter_gravity = CLUTTER_GRAVITY_SOUTH; break;
-	  case 6: clutter_gravity = CLUTTER_GRAVITY_SOUTH_WEST; break;
-	  case 7: clutter_gravity = CLUTTER_GRAVITY_WEST; break;
-	  case 8: clutter_gravity = CLUTTER_GRAVITY_NORTH_WEST; break;
-	  case 9: clutter_gravity = CLUTTER_GRAVITY_CENTER; break;
+	  case 1: clutter_actor_set_pivot_point (actor, 0.5, 0); break; // CLUTTER_GRAVITY_NORTH
+	  case 2: clutter_actor_set_pivot_point (actor, 1, 0); break; //CLUTTER_GRAVITY_NORTH_EAST
+	  case 3: clutter_actor_set_pivot_point (actor, 1, 0.5); break; //CLUTTER_GRAVITY_EAST
+	  case 4: clutter_actor_set_pivot_point (actor, 1, 1); break; //CLUTTER_GRAVITY_SOUTH_EAST
+	  case 5: clutter_actor_set_pivot_point (actor, 0.5, 1); break; //CLUTTER_GRAVITY_SOUTH
+	  case 6: clutter_actor_set_pivot_point (actor, 0, 1); break; //CLUTTER_GRAVITY_SOUTH_WEST
+	  case 7: clutter_actor_set_pivot_point (actor, 0, 0.5); break; //CLUTTER_GRAVITY_WEST
+	  case 8: clutter_actor_set_pivot_point (actor, 0, 0); break; //CLUTTER_GRAVITY_NORTH_WEST
+	  case 9: clutter_actor_set_pivot_point (actor, 0.5, 0.5); break; //CLUTTER_GRAVITY_CENTER
 
-	  default: clutter_gravity = CLUTTER_GRAVITY_NONE; break;
-      }
-
-      if (clutter_gravity == CLUTTER_GRAVITY_NONE)
-      {
-	  clutter_actor_move_anchor_point (actor, x, y);
-      }
-      else
-      {
-	  clutter_actor_move_anchor_point_from_gravity
-	      (actor, clutter_gravity);
+	  default: clutter_actor_set_pivot_point (actor, x, y); break; //CLUTTER_GRAVITY_NONE
       }
   }
   else if (xev->message_type == parent_atom)
@@ -182,8 +172,7 @@ hd_animation_actor_client_message (XClientMessageEvent *xev, void *userdata)
       ClutterActor *parent = clutter_actor_get_parent (actor);
       if (parent)
         {
-          clutter_container_remove_actor (CLUTTER_CONTAINER (parent),
-                                        actor);
+          clutter_actor_remove_child (parent, actor);
         }
 
       if (win != 0)
@@ -211,8 +200,7 @@ hd_animation_actor_client_message (XClientMessageEvent *xev, void *userdata)
 
 	  if (parent)
           {
-            clutter_container_add_actor (CLUTTER_CONTAINER (parent),
-                                         actor);
+            clutter_actor_add_child (parent, actor);
          }
       }
 

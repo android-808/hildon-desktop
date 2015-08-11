@@ -8,13 +8,20 @@ int main(int argc, char const *argv[])
   GtkWidget *dlg;
 
   gtk_init(NULL, NULL);
-  dlg = hildon_get_password_dialog_new(NULL, FALSE);
+  GtkDialogFlags flags = GTK_DIALOG_MODAL;
+  dlg = gtk_dialog_new_with_buttons ("Port. Dlg Test",
+                                      NULL,
+                                      flags,
+                                      "OK",
+                                      GTK_RESPONSE_ACCEPT,
+                                      "Cancel",
+                                      GTK_RESPONSE_REJECT,
+                                      NULL);
+
   init_portrait(GTK_WIDGET(dlg), argv);
 
-  hildon_get_password_dialog_set_message(HILDON_GET_PASSWORD_DIALOG(dlg),
-                                         "Hamm-hamm spaghetti");
   gtk_window_set_title(GTK_WINDOW(dlg), "Portrait dialog");
-  gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dlg)->vbox), portrait());
+  gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area (GTK_DIALOG(dlg))), portrait());
   gtk_widget_show_all(dlg);
   gtk_dialog_run(GTK_DIALOG(dlg));
 

@@ -220,8 +220,8 @@ struct _HdRenderManagerPrivate {
 
   /* We only update the input viewport on idle to attempt to reduce the
    * amount of calls to the X server. */
-  GdkRegion           *current_input_viewport;
-  GdkRegion           *new_input_viewport;
+  cairo_region_t           *current_input_viewport;
+  cairo_region_t           *new_input_viewport;
   guint                input_viewport_callback;
 };
 
@@ -2944,7 +2944,7 @@ hd_render_manager_set_compositor_input_viewport_idle (gpointer data)
   MBWindowManager        *wm   = MB_WM_COMP_MGR(priv->comp_mgr)->wm;
   Window        win = None;
   Window        clwin;
-  GdkRectangle *rectangles;
+  cairo_rectangle_int_t *rectangles;
   XRectangle   *xrectangles = 0;
   gint          i,n_rectangles;
   XserverRegion region;
@@ -2953,18 +2953,18 @@ hd_render_manager_set_compositor_input_viewport_idle (gpointer data)
   /* If we're not actually changing the contents of the viewport, just
      return now */
   if (priv->current_input_viewport &&
-      gdk_region_equal(priv->new_input_viewport,
+      cairo_region_equal(priv->new_input_viewport,
                        priv->current_input_viewport))
     return FALSE;
 
-  /* Create an XFixes region from the GdkRegion. We use GdkRegion because
+  /* Create an XFixes region from the cairo_region_t. We use cairo_region_t because
    * we can check equality easily with it. */
-  gdk_region_get_rectangles (priv->new_input_viewport,
-                             &rectangles,
-                             &n_rectangles);
+  n_rectangles = cairo_region_num_rectangles (priv->new_input_viewport);
+  rectangles = g_new (cairo_rectangle_int_t, n_rectangles);
   if (n_rectangles>0)
     xrectangles = g_malloc(sizeof(XRectangle) * n_rectangles);
-  for (i=0;i<n_rectangles;i++) {
+  for (i = 0; i < n_rectangles; i++) {
+    cairo_region_get_rectangle (priv->new_input_viewport, i, &rectangles[i]);
     xrectangles[i].x = rectangles[i].x;
     xrectangles[i].y = rectangles[i].y;
     xrectangles[i].width = rectangles[i].width;
@@ -2994,7 +2994,7 @@ hd_render_manager_set_compositor_input_viewport_idle (gpointer data)
 
    /* Update our current viewport field */
    if (priv->current_input_viewport)
-     gdk_region_destroy(priv->current_input_viewport);
+     cairo_region_destroy(priv->current_input_viewport);
    priv->current_input_viewport = priv->new_input_viewport;
    priv->new_input_viewport = 0;
 
@@ -3005,13 +3005,13 @@ hd_render_manager_set_compositor_input_viewport_idle (gpointer data)
  * and overlay windows to region (queues an update on idle, which updates
  * only if there has been a change */
 static void
-hd_render_manager_set_compositor_input_viewport (GdkRegion *region)
+hd_render_manager_set_compositor_input_viewport (cairo_region_t *region)
 {
   HdRenderManagerPrivate *priv = the_render_manager->priv;
 
   /*  */
   if (priv->new_input_viewport)
-    gdk_region_destroy(priv->new_input_viewport);
+    cairo_region_destroy(priv->new_input_viewport);
   priv->new_input_viewport = region;
 
   /* Add idle callback. This MUST be higher priority than Clutter timelines
@@ -3027,20 +3027,20 @@ hd_render_manager_set_compositor_input_viewport (GdkRegion *region)
 /* Creates a region for anything of a type in client_mask which is
  * above the desktop - we can use this to mask off buttons by notifications,
  * etc. */
-static GdkRegion*
+static cairo_region_t*
 hd_render_manager_get_foreground_region(MBWMClientType client_mask)
 {
   MBWindowManagerClient *fg_client;
   HdRenderManagerPrivate *priv = the_render_manager->priv;
   MBWindowManager *wm = MB_WM_COMP_MGR(priv->comp_mgr)->wm;
-  GdkRegion *region = gdk_region_new();
+  cairo_region_t *region = cairo_region_create();
 
   fg_client = wm->desktop ? wm->desktop->stacked_above : 0;
   while (fg_client)
     {
       if (MB_WM_CLIENT_CLIENT_TYPE(fg_client) & client_mask)
-        gdk_region_union_with_rect(region,
-            (GdkRectangle*)(void*)&fg_client->window->geometry);
+        cairo_region_union_rectangle(region,
+            (cairo_rectangle_int_t*)(void*)&fg_client->window->geometry);
 
       fg_client = fg_client->stacked_above;
     }
@@ -3052,7 +3052,7 @@ void
 hd_render_manager_set_input_viewport()
 {
   HdRenderManagerPrivate *priv = the_render_manager->priv;
-  GdkRegion         *region = gdk_region_new();
+  cairo_region_t         *region = cairo_region_create();
   MBWindowManager   *wm = MB_WM_COMP_MGR (priv->comp_mgr)->wm;
   MBWindowManagerClient *c;
 
@@ -3074,10 +3074,10 @@ hd_render_manager_set_input_viewport()
           if ((hd_title_bar_get_state(priv->title_bar) & HDTB_VIS_BTN_LEFT_MASK)
               && hd_render_manager_actor_is_visible(CLUTTER_ACTOR(priv->title_bar)))
             {
-              GdkRectangle rect = {0,0,
+              cairo_rectangle_int_t rect = {0,0,
                   hd_title_bar_get_button_width(priv->title_bar),
                   HD_COMP_MGR_TOP_MARGIN};
-              gdk_region_union_with_rect(region, &rect);
+              cairo_region_union_rectangle(region, &rect);
             }
 
           /* RIGHT button: We have to ignore this in app mode, because matchbox
@@ -3085,11 +3085,11 @@ hd_render_manager_set_input_viewport()
           if ((hd_title_bar_get_state(priv->title_bar) & HDTB_VIS_BTN_RIGHT_MASK) &&
               !STATE_IS_APP(priv->state))
             {
-              GdkRectangle rect = {0,0,
+              cairo_rectangle_int_t rect = {0,0,
                   hd_title_bar_get_button_width(priv->title_bar),
                   HD_COMP_MGR_TOP_MARGIN };
               rect.x = hd_comp_mgr_get_current_screen_width() - rect.width;
-              gdk_region_union_with_rect(region, &rect);
+              cairo_region_union_rectangle(region, &rect);
             }
 
            /* Edit button... */
@@ -3098,7 +3098,7 @@ hd_render_manager_set_input_viewport()
                ClutterGeometry geom;
                clutter_actor_get_geometry(
                        hd_home_get_edit_button(priv->home), &geom);
-               gdk_region_union_with_rect(region, (GdkRectangle*)(void*)&geom);
+               cairo_region_union_rectangle(region, (cairo_rectangle_int_t*)(void*)&geom);
              }
 
           /* Block status area?  If so refer to the client geometry,
@@ -3120,18 +3120,18 @@ hd_render_manager_set_input_viewport()
             {
               ClutterGeometry geom;
               clutter_actor_get_geometry(priv->status_area, &geom);
-              gdk_region_union_with_rect(region, (GdkRectangle*)(void*)&geom);
+              cairo_region_union_rectangle(region, (cairo_rectangle_int_t*)(void*)&geom);
             }
         }
       else
         {
           /* g_warning ("%s: get the whole screen!", __func__); */
-          GdkRectangle screen = {
+          cairo_rectangle_int_t screen = {
               0, 0,
               hd_comp_mgr_get_current_screen_width (),
               hd_comp_mgr_get_current_screen_height ()
               };
-          gdk_region_union_with_rect(region, &screen);
+          cairo_region_union_rectangle(region, &screen);
         }
 
 
@@ -3140,20 +3140,20 @@ hd_render_manager_set_input_viewport()
        * position of showing any of them */
       if (STATE_UNGRAB_NOTES(hd_render_manager_get_state()))
         {
-          GdkRegion *subtract = hd_render_manager_get_foreground_region(
+          cairo_region_t *subtract = hd_render_manager_get_foreground_region(
               MBWMClientTypeNote | MBWMClientTypeDialog);
-          gdk_region_subtract (region, subtract);
-          gdk_region_destroy (subtract);
+          cairo_region_subtract (region, subtract);
+          cairo_region_destroy (subtract);
         }
 
       /*
        * We need the events initiated on the applets.
        */
       if (STATE_NEED_DESKTOP(hd_render_manager_get_state())) {
-        GdkRegion *unionregion = hd_render_manager_get_foreground_region(
+        cairo_region_t *unionregion = hd_render_manager_get_foreground_region(
               HdWmClientTypeHomeApplet);
-          gdk_region_union (region, unionregion);
-          gdk_region_destroy (unionregion);
+          cairo_region_union (region, unionregion);
+          cairo_region_destroy (unionregion);
       }
     }
 
@@ -3163,8 +3163,8 @@ hd_render_manager_set_input_viewport()
   for (c = wm->stack_top; c && c != wm->desktop; c = c->stacked_below)
     if (HD_IS_INCOMING_EVENT_PREVIEW_NOTE (c)
         && hd_render_manager_is_client_visible (c))
-      gdk_region_union_with_rect(region,
-                                 (GdkRectangle*)(void*)&c->frame_geometry);
+      cairo_region_union_rectangle(region,
+                                 (cairo_rectangle_int_t*)(void*)&c->frame_geometry);
 
   /* Now queue an update with this new region */
   hd_render_manager_set_compositor_input_viewport(region);
@@ -3176,27 +3176,29 @@ void
 hd_render_manager_flip_input_viewport()
 {
   HdRenderManagerPrivate *priv = the_render_manager->priv;
-  GdkRectangle *inputshape;
+  cairo_rectangle_int_t *inputshape;
   int i, ninputshapes;
-  GdkRegion *region;
+  cairo_region_t *region;
 
   /* We should already have a viewport here, but just check */
   if (!priv->current_input_viewport)
     return;
 
   /* Get our current input viewport and rotate it */
-  gdk_region_get_rectangles(priv->current_input_viewport,
-                            &inputshape, &ninputshapes);
-  region = gdk_region_new();
+  ninputshapes = cairo_region_num_rectangles(priv->current_input_viewport);
+  inputshape = g_new (cairo_rectangle_int_t, ninputshapes);
+  region = cairo_region_create();
   for (i = 0; i < ninputshapes; i++)
     {
-      GdkRectangle new_inputshape;
+      cairo_region_get_rectangle (priv->current_input_viewport, i, &inputshape[i]);
+
+      cairo_rectangle_int_t new_inputshape;
 
       new_inputshape.x = inputshape[i].y;
       new_inputshape.y = inputshape[i].x;
       new_inputshape.width = inputshape[i].height;
       new_inputshape.height = inputshape[i].width;
-      gdk_region_union_with_rect(region, &new_inputshape);
+      cairo_region_union_rectangle(region, &new_inputshape);
     }
   g_free(inputshape);
 

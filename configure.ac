@@ -73,7 +73,7 @@ fi
 
 # do we want a11y support?
 AC_ARG_ENABLE(a11y,
-             [  --enable-a11y   Enable Accessibility (requires cally) [default=no]],
+             [  --enable-a11y   Enable Accessibility [default=no]],
              [ac_cv_enable_a11y=$enableval],[ac_cv_enable_a11y=no])
 
 AC_MSG_CHECKING([whether to enable a11y])
@@ -108,6 +108,38 @@ else
        AC_DEFINE(DISABLE_A11Y, [], ["Disabled a11y macro"])
 fi
 
+# do we want dsme support?
+AC_ARG_ENABLE(dsme,
+             [  --enable-dsme   Enable DSME support [default=yes]],
+             [ac_cv_enable_a11y=$enableval],[ac_cv_enable_a11y=yes])
+
+AC_MSG_CHECKING([whether to enable DSME])
+AC_PATH_PROG(PKG_CONFIG, pkg-config, yes)
+if test "$ac_cv_enable_a11y" = yes; then
+       echo "ac_cv_enable_dsme: Forced off."
+       ac_cv_enable_a11y=no
+       if test "x$PKG_CONFIG" != "xno"; then
+         echo "ac_cv_enable_dsme: Have pkg-config: $PKG_CONFIG"
+         if $PKG_CONFIG --exists dsme; then
+           echo "ac_cv_enable_dsme: pkg-config says dsme exists"
+           ac_cv_enable_dsme=yes ;
+           echo "ac_cv_enable_dsme: Turned on."
+         else
+           echo "ac_cv_enable_dsme: $PKG_CONFIG --exists dsme failed"
+         fi
+       else
+         echo "ac_cv_enable_dsme: Do not have pkg-config: $PKG_CONFIG"
+       fi
+fi
+if test "$ac_cv_enable_dsme" = yes; then
+       AC_MSG_RESULT(yes)
+       AC_DEFINE(HAVE_DSME, [], ["Enabled DSME macro"])
+       PKG_CHECK_MODULES(DSME, dsme)
+else
+       AC_MSG_RESULT(no)
+fi
+
+
 #+++++++++++++++++++++
 # Dependencies checks
 #+++++++++++++++++++++
@@ -116,51 +148,55 @@ if test "$ac_cv_enable_static_mb2" = yes; then
         PKG_CHECK_MODULES([MB2], [libmatchbox2-0.1])
         MB2_STATIC_LIB='$(libdir)/libmatchbox2-0.1.a'
 
-        PKG_CHECK_MODULES(HD, [clutter-1.0 < 1.5 dnl 1.5.x is broken
-                       mx-1.0 <= 1.1.2 dnl 1.1.3+ requires clutter 1.5
+        PKG_CHECK_MODULES(HD, [clutter-1.0 dnl 1.5.x is broken, we have 1.20 though
+                       mx-1.0 dnl
                        glib-2.0 >= 2.12 dnl
                        gthread-2.0 dnl
                        dbus-1 dnl
                        dbus-glib-1 dnl
                        x11 dnl
+                       xrender dnl
                        xcomposite dnl
                        xfixes dnl
                        xrandr dnl
-                       gtk+-2.0 dnl
+                       gtk+-3.0 dnl
                        gconf-2.0 dnl
                        hildon-1 dnl
                        libhildondesktop-1 dnl
                        libcanberra dnl
-                       libgnome-menu dnl
+                       libgnome-menu-3.0 dnl
                        gdk-pixbuf-xlib-2.0 dnl
                        pangoxft dnl
                        xft dnl
-                       dnl MAEGO_DISABLED dsme dnl TODO HAVE_DSME Convert MCE to DSME
+                       libpng12 dnl
+                       gl dnl
                        ])
 else
         MB2_CFLAGS=''
         MB2_STATIC_LIB=''
 
-        PKG_CHECK_MODULES(HD, [clutter-1.0 < 1.5 dnl 1.5.x is broken
-                       mx-1.0 <= 1.1.2 dnl 1.1.3+ requires clutter 1.5
+        PKG_CHECK_MODULES(HD, [clutter-1.0 dnl 1.5.x is broken, we have 1.20 though
+                       mx-1.0 dnl
                        glib-2.0 >= 2.12 dnl
                        gthread-2.0 dnl
                        dbus-1 dnl
                        dbus-glib-1 dnl
                        x11 dnl
+                       xrender dnl
                        xcomposite dnl
                        xfixes dnl
                        xrandr dnl
-                       gtk+-2.0 dnl
+                       gtk+-3.0 dnl
                        gconf-2.0 dnl
                        hildon-1 dnl
                        libhildondesktop-1 dnl
                        libcanberra dnl
-                       libgnome-menu dnl
+                       libgnome-menu-3.0 dnl
                        gdk-pixbuf-xlib-2.0 dnl
                        xft dnl
+                       libpng12 dnl
+                       gl dnl
                        libmatchbox2-0.1 dnl
-                       dnl MAEGO_DISABLED dsme dnl TODO HAVE_DSME Convert MCE to DSME
                        ])
 fi
 
@@ -172,6 +208,8 @@ AC_SUBST(MB2_CFLAGS)
 AC_SUBST(MB2_STATIC_LIB)
 
 AC_SUBST(HD_LIBS)
+
+HD_LIBS+='-lm -ldl '
 
 if test "$ac_cv_enable_static_mb2" = yes; then
         HD_LIBS+='-lexpat'

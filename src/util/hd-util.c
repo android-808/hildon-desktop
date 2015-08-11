@@ -16,6 +16,7 @@
 #include "hd-render-manager.h"
 
 #include <gdk/gdk.h>
+#include <GLES2/gl2.h>
 
 void *
 hd_util_get_win_prop_data_and_validate (Display   *xdpy,
@@ -667,7 +668,7 @@ hd_util_partial_redraw_if_possible(ClutterActor *actor, ClutterGeometry *bounds)
 /* Check to see whether clients above this one totally obscure it */
 gboolean hd_util_client_obscured(MBWindowManagerClient *client)
 {
-  GdkRegion *region;
+  cairo_region_t *region;
   MBWindowManagerClient *obscurer;
   gboolean empty;
 
@@ -675,26 +676,26 @@ gboolean hd_util_client_obscured(MBWindowManagerClient *client)
     return FALSE; /* be safe */
 
   /* Get region representing the current client */
-  region = gdk_region_rectangle((GdkRectangle*)(void*)&client->window->geometry);
+  region = cairo_region_create_rectangle((cairo_rectangle_int_t*)(void*)&client->window->geometry);
 
   /* Subtract the region of all clients above */
   for (obscurer = client->stacked_above;
-       obscurer && !gdk_region_empty(region);
+       obscurer && !cairo_region_is_empty(region);
        obscurer = obscurer->stacked_above)
     {
-      GdkRegion *obscure_region;
+      cairo_region_t *obscure_region;
       if (!obscurer->window)
         continue; /* be safe */
       obscure_region =
-          gdk_region_rectangle((GdkRectangle*)(void*)&obscurer->window->geometry);
-      gdk_region_subtract(region, obscure_region);
-      gdk_region_destroy(obscure_region);
+          cairo_region_create_rectangle((cairo_rectangle_int_t*)(void*)&obscurer->window->geometry);
+      cairo_region_subtract(region, obscure_region);
+       	cairo_region_destroy(obscure_region);
     }
 
   /* If there is nothing left, then this can't
    * be visible */
-  empty = gdk_region_empty(region);
-  gdk_region_destroy(region);
+  empty = cairo_region_is_empty(region);
+  cairo_region_destroy(region);
   return empty;
 }
 

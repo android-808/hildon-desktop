@@ -5,7 +5,7 @@ static gboolean Init_portrait_support, Init_portrait_request;
 
 static void set_portrait(GtkWidget *self, char const *prop, guint32 value)
 {
-  gdk_property_change(gtk_widget_get_toplevel(self)->window,
+  gdk_property_change(gtk_widget_get_window (gtk_widget_get_toplevel(self)),
                       gdk_atom_intern_static_string (prop),
                       gdk_x11_xatom_to_atom(XA_CARDINAL), 32,
                       GDK_PROP_MODE_REPLACE, (gpointer)&value, 1);

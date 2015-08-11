@@ -495,7 +495,7 @@ hd_launcher_editor_show (GtkWidget *window)
 {
   gtk_widget_realize (window);
 
-  GdkWindow *gdk_window = window->window;
+  GdkWindow *gdk_window = gtk_widget_get_window (window);
   GdkDisplay *gdk_display = gdk_display_get_default ();
   Display *display = GDK_DISPLAY_XDISPLAY (gdk_display);
   Window xwindow = xwindow = GDK_WINDOW_XID (gdk_window);

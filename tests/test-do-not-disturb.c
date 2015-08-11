@@ -41,7 +41,7 @@ button_toggled (GtkToggleButton *button,
     {
       guint32 set = 1;
 
-      gdk_property_change (widget->window,
+      gdk_property_change (gtk_widget_get_window (widget),
                            gdk_atom_intern_static_string ("_HILDON_DO_NOT_DISTURB"),
                            gdk_x11_xatom_to_atom (XA_INTEGER),
                            32,
@@ -51,7 +51,7 @@ button_toggled (GtkToggleButton *button,
     }
   else
     {
-      gdk_property_delete (widget->window,
+      gdk_property_delete (gtk_widget_get_window (widget),
                            gdk_atom_intern_static_string ("_HILDON_DO_NOT_DISTURB"));
     }
 }

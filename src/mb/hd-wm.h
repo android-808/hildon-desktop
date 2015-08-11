@@ -23,7 +23,7 @@
 
 #ifndef __HD_WM_H__
 
-#include <glib/gmacros.h>
+#include <glib.h>
 #include <matchbox/core/mb-wm.h>
 
 G_BEGIN_DECLS

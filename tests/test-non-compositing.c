@@ -52,7 +52,7 @@ static void set_non_compositing (GtkWidget *win)
 	Window xwindow;
 	Atom atom;
 	int one = 1;
-	GdkWindow *gdk_window = GTK_WIDGET (win)->window;
+	GdkWindow *gdk_window = gtk_widget_get_window(win);
 	GdkDisplay *gdk_display = gdk_display_get_default ();
 	Display *display = GDK_DISPLAY_XDISPLAY (gdk_display);
 

@@ -22,6 +22,8 @@
  *
  */
 
+#include <config.h>
+
 #include "hd-comp-mgr.h"
 #include "hd-switcher.h"
 #include "hd-task-navigator.h"
@@ -81,6 +83,7 @@ struct HdCompMgrPrivate
   MBWindowManagerClient *desktop;
   HdRenderManager       *render_manager;
   HdAppMgr              *app_mgr;
+  //ClutterActor          *stage;
 
   HdSwitcher            *switcher_group;
   ClutterActor          *home;
@@ -500,6 +503,7 @@ hd_comp_mgr_init (MBWMObject *obj, va_list vap)
 #ifdef HAVE_DSME
 /* TODO Convert MCE to DSME */
   DBusGConnection      *system_connection;
+  GError               *error = NULL;
 #endif
   extern MBWindowManager *hd_mb_wm;
   ClutterDeviceManager *manager;
@@ -517,6 +521,7 @@ hd_comp_mgr_init (MBWMObject *obj, va_list vap)
   hd_gtk_style_init ();
 
   stage = clutter_stage_get_default ();
+  //priv->stage = clutter_stage_new ();
 
   /* Workaround missing EnterNotify event on window creation */
   manager = clutter_device_manager_get_default ();
@@ -525,6 +530,7 @@ hd_comp_mgr_init (MBWMObject *obj, va_list vap)
   event = clutter_event_new (CLUTTER_MOTION);
   event->motion.flags = CLUTTER_EVENT_FLAG_SYNTHETIC;
   event->motion.stage = CLUTTER_STAGE(stage);
+  //event->motion.stage = CLUTTER_STAGE(priv->stage);
   clutter_input_device_update_from_event (device, event, TRUE);
   clutter_event_free (event);
 
@@ -545,8 +551,8 @@ hd_comp_mgr_init (MBWMObject *obj, va_list vap)
 		                                  HD_HOME(priv->home),
 						  hd_task_navigator);
   g_object_set(priv->home, "hdrm", priv->render_manager, NULL);
-  clutter_container_add_actor(CLUTTER_CONTAINER (stage),
-                              CLUTTER_ACTOR(priv->render_manager));
+  clutter_actor_add_child (stage, CLUTTER_ACTOR(priv->render_manager));
+  //clutter_actor_add_child (priv->stage, CLUTTER_ACTOR(priv->render_manager));
 
   /* Pass the render manager to the app mgr so it knows when it can't
    * prestart apps.
@@ -598,6 +604,7 @@ hd_comp_mgr_init (MBWMObject *obj, va_list vap)
 
 #ifndef MAEMO_CHANGES
   clutter_stage_show_cursor (CLUTTER_STAGE (stage));
+  //clutter_stage_show_cursor (CLUTTER_STAGE (priv->stage));
 #endif
 
 #ifdef HAVE_DSME
@@ -637,6 +644,7 @@ hd_comp_mgr_destroy (MBWMObject *obj)
       g_object_unref (priv->app_mgr);
       priv->app_mgr = NULL;
     }
+  //clutter_actor_destroy (priv->stage);
   g_object_unref( priv->render_manager );
 
   mb_wm_main_context_x_event_handler_remove (
@@ -1399,7 +1407,6 @@ hd_comp_mgr_texture_update_area(HdCompMgr *hmgr,
                                 ClutterActor* actor)
 {
   ClutterActor *parent;
-  HdCompMgrPrivate * priv;
   gboolean blur_update = FALSE;
   ClutterActor *actors_stage;
 
@@ -1423,8 +1430,6 @@ hd_comp_mgr_texture_update_area(HdCompMgr *hmgr,
    */
   if (hd_transition_rotate_ignore_damage())
     return;
-
-  priv = hmgr->priv;
 
   /* TFP textures are usually bundled into another group, and it is
    * this group that sets visibility - so we must check it too */
@@ -1478,9 +1483,9 @@ hd_comp_mgr_hook_update_area(HdCompMgr *hmgr, ClutterActor *actor)
       ClutterActor *child;
       gint i;
 
-      for (i = 0, child = clutter_group_get_nth_child(CLUTTER_GROUP(actor), 0);
+      for (i = 0, child = clutter_actor_get_child_at_index(actor, 0);
            child;
-           child = clutter_group_get_nth_child(CLUTTER_GROUP(actor), ++i))
+           child = clutter_actor_get_child_at_index(actor, ++i))
         {
           if (CLUTTER_X11_IS_TEXTURE_PIXMAP(child))
             {
@@ -1534,6 +1539,7 @@ void hd_comp_mgr_reset_overlay_shape (HdCompMgr *hmgr)
   MBWindowManager   *wm;
   Window             clutter_window;
   ClutterActor      *stage;
+  //ClutterActor      *stage = hmgr->priv->stage;
 
   want_fs_comp = !STATE_IS_NON_COMP (hd_render_manager_get_state ());
   if (want_fs_comp == fs_comp)
@@ -2656,7 +2662,7 @@ hd_comp_mgr_determine_current_app ()
         continue;
       if (!c->window)
         continue;
-      if (c->window->name && !g_strncasecmp (c->window->name, "systemui", 8))
+      if (c->window->name && !g_ascii_strncasecmp (c->window->name, "systemui", 8))
         /* systemui is not an application. */
         continue;
       return c;
@@ -3458,7 +3464,7 @@ dump_clutter_actor_tree (ClutterActor *actor, GString *indent)
     name = clutter_text_get_text (CLUTTER_TEXT (actor));
   cmgrc = g_object_get_data(G_OBJECT (actor), "HD-MBWMCompMgrClutterClient");
 
-  clutter_actor_get_geometry (actor, &geo);
+  clutter_actor_get_allocation_geometry (actor, &geo);
   clutter_actor_get_anchor_point (actor, &ax, &ay);
   g_debug ("actor[%u]: %s%p (type=%s, name=%s, win=0x%lx), "
            "size: %ux%u%+d%+d[%g,%g], visible: %d, reactive: %d",

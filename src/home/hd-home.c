@@ -85,7 +85,7 @@
 
 #define MAX_VIEWS 4
 
-#define FN_KEY GDK_ISO_Level3_Shift
+#define FN_KEY GDK_KEY_ISO_Level3_Shift
 #define FN_MODIFIER Mod5Mask
 #define HD_HOME_KEY_PRESS_TIMEOUT (3)
 

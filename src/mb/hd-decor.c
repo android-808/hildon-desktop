@@ -196,19 +196,19 @@ hd_decor_remove_actors(HdDecor   *decor)
     }
   if (decor->progress_texture)
     {
-      clutter_container_remove_actor(CLUTTER_CONTAINER(actor),
+      clutter_actor_remove_child(actor,
                                      decor->progress_texture);
       decor->progress_texture = 0;
     }
   if (decor->title_bar_actor)
     {
-      clutter_container_remove_actor(CLUTTER_CONTAINER(actor),
+      clutter_actor_remove_child(actor,
                                      decor->title_bar_actor);
       decor->title_bar_actor = 0;
     }
   if (decor->title_actor)
     {
-      clutter_container_remove_actor(CLUTTER_CONTAINER(actor),
+      clutter_actor_remove_child(actor,
                                      decor->title_actor);
       decor->title_actor = 0;
     }
@@ -265,7 +265,7 @@ hd_decor_create_actors(HdDecor *decor)
               mb_decor->geom.x+client->frame_geometry.x-client->window->geometry.x,
               mb_decor->geom.y+client->frame_geometry.y-client->window->geometry.y);
 
-  clutter_container_add_actor(CLUTTER_CONTAINER(actor), decor->title_bar_actor);
+  clutter_actor_add_child(actor, decor->title_bar_actor);
 
   /* add the title */
   if (d->show_title)
@@ -297,8 +297,7 @@ hd_decor_create_actors(HdDecor *decor)
           clutter_text_set_use_markup(bar_title, TRUE);
 
         decor->title_actor = CLUTTER_ACTOR(bar_title);
-        clutter_container_add_actor(CLUTTER_CONTAINER(actor),
-                                    decor->title_actor);
+        clutter_actor_add_child(actor, decor->title_actor);
 
         snprintf (font_name, sizeof (font_name), "%s %i%s",
                   d->font_family ? d->font_family : "Sans",
@@ -348,8 +347,7 @@ hd_decor_create_actors(HdDecor *decor)
               clutter_actor_get_width(CLUTTER_ACTOR(decor->title_actor)) +
               HD_TITLE_BAR_PROGRESS_MARGIN;
         }
-      clutter_container_add_actor(CLUTTER_CONTAINER(actor),
-                                  decor->progress_texture);
+      clutter_actor_add_child(actor, decor->progress_texture);
       clutter_actor_set_position(decor->progress_texture,
           x,
           (mb_decor->geom.height - HD_THEME_IMG_PROGRESS_SIZE)/2);
@@ -359,7 +357,7 @@ hd_decor_create_actors(HdDecor *decor)
       decor->progress_timeline = g_object_ref(
           clutter_timeline_new(HD_THEME_IMG_PROGRESS_FRAMES * 1000
                                / HD_THEME_IMG_PROGRESS_FPS));
-      clutter_timeline_set_loop(decor->progress_timeline, TRUE);
+      clutter_timeline_set_repeat_count(decor->progress_timeline, -1);
       g_signal_connect (decor->progress_timeline, "new-frame",
                         G_CALLBACK (on_decor_progress_timeline_new_frame),
                         decor->progress_texture);
@@ -371,9 +369,9 @@ void hd_decor_sync(HdDecor *decor)
 {
   MBWMDecor *mbdecor = MB_WM_DECOR(decor);
   MBWindowManagerClient  *client = MB_WM_DECOR(decor)->parent_client;
-  MBWMTheme *theme;
+  //MBWMTheme *theme;
   ClutterActor *actor;
-  ClutterGeometry geom;
+  //ClutterGeometry geom;
   HdTitleBar *bar;
 
   if (!client || !client->wmref) return;
@@ -382,11 +380,11 @@ void hd_decor_sync(HdDecor *decor)
   if (bar && hd_title_bar_is_title_bar_decor(bar, mbdecor))
     hd_title_bar_update(bar);
 
-  theme = client->wmref->theme;
+  //theme = client->wmref->theme;
 
   actor = hd_decor_get_actor(decor);
   if (!actor) return;
-  clutter_actor_get_geometry(actor, &geom);
+  //clutter_actor_get_geometry(actor, &geom);
 
   /* TODO: We probably want to try and adjust the current actors
    * rather than removing them and recreating them. */

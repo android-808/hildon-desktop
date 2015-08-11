@@ -26,7 +26,7 @@ static GtkWidget *fancy(GtkWidget *w, GtkWindow *win)
       static guint32 no = { 0 };
 
       gtk_widget_realize(w);
-      gdk_property_change(w->window,
+      gdk_property_change(gtk_widget_get_window (w),
                gdk_atom_intern_static_string ("_HILDON_PORTRAIT_MODE_SUPPORT"),
                gdk_x11_xatom_to_atom(XA_CARDINAL), 32,
                GDK_PROP_MODE_REPLACE, (gpointer)&no, 1);
@@ -76,18 +76,26 @@ static gboolean boo_hit_cb(GtkWidget *w, GdkEventKey *e, GtkWindow *win)
   if (e->keyval == 'm')
     {
       static gboolean ismax;
-      static GtkAllocation restore_size;
+      static GtkAllocation *restore_size;
+      static GtkAllocation *allocation;
+
+      restore_size = g_new0 (GtkAllocation, 1);
+      allocation = g_new0 (GtkAllocation, 1);
+      gtk_widget_get_allocation(GTK_WIDGET(win), allocation);
 
       if (!ismax)
         {
-          restore_size = w->allocation;
+          restore_size = g_new0 (GtkAllocation, 1);
+	  gtk_widget_get_allocation(GTK_WIDGET(w), restore_size);
           gtk_widget_set_size_request(w,
-                                      GTK_WIDGET(win)->allocation.width,
-                                      GTK_WIDGET(win)->allocation.height);
+                                      allocation->width,
+                                      allocation->height);
         }
       else
-        gtk_widget_set_size_request(w, restore_size.width, restore_size.height);
+        gtk_widget_set_size_request(w, restore_size->width, restore_size->height);
       ismax = !ismax;
+      g_free (allocation); 
+      g_free (restore_size);
     }
   else if (e->keyval == 'f')
     {
@@ -196,7 +204,7 @@ static void hee_cb(GtkWindow *win)
   menu = gtk_menu_new();
   menu_item = gtk_menu_item_new_with_label("Die, my darling");
   g_signal_connect_swapped(menu_item, "activate",
-                           G_CALLBACK(gtk_object_destroy), newin);
+                           G_CALLBACK(gtk_widget_destroy), newin);
   gtk_widget_show(menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
   hildon_window_set_main_menu(HILDON_WINDOW(newin), GTK_MENU(menu));
@@ -262,8 +270,8 @@ int main(int argc, char const *argv[])
   win = hildon_stackable_window_new();
   gtk_window_set_title(GTK_WINDOW(win), "Look, a window!");
   g_signal_connect(win, "destroy", G_CALLBACK(exit), NULL);
-  hildon_stackable_window_set_main_menu(HILDON_STACKABLE_WINDOW(win),
-                                        mkmenu(GTK_WINDOW(win)));
+  hildon_window_set_main_menu(HILDON_WINDOW(win),
+                                        GTK_MENU(mkmenu(GTK_WINDOW(win))));
   init_portrait(win, argv);
 
   vbox = gtk_vbox_new(FALSE, 0);

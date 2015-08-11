@@ -66,7 +66,7 @@ static void set_fullscreen (Display *display, Window xwindow)
 /* This is called when we need to draw the windows contents */
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event, gpointer userdata)
 {
-    cairo_t *cr = gdk_cairo_create(widget->window);
+    cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
     static GTimer *timer = 0;
     static int frame = 0;
     static double last_time = 0;
@@ -135,13 +135,13 @@ int main(int argc, char **argv)
 
 #ifndef COMPOSITED
     Display *display = XOpenDisplay (NULL);
-    set_non_compositing (display, GDK_WINDOW_XID (GTK_WIDGET (window)->window));
+    set_non_compositing (display, GDK_WINDOW_XID (gtk_widget_get_window(window)));
 #endif
 
     gtk_widget_show_all(window);
 
 #ifndef COMPOSITED
-    set_fullscreen (display, GDK_WINDOW_XID (GTK_WIDGET (window)->window));
+    set_fullscreen (display, GDK_WINDOW_XID (gtk_widget_get_window(window)));
 #endif
 
     gtk_main();

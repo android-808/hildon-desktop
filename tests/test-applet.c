@@ -57,10 +57,10 @@ do_home_pan (gboolean left)
   ev.xclient.format = 32;
   ev.xclient.data.l[0] = (long)left;
 
-  XSendEvent (GDK_DISPLAY (), GDK_ROOT_WINDOW (), False,
+  XSendEvent (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), GDK_ROOT_WINDOW (), False,
 	      StructureNotifyMask, &ev);
 
-  XSync (GDK_DISPLAY (), False);
+  XSync (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), False);
 }
 
 static gint
@@ -123,7 +123,7 @@ x_event_filter_func (GdkXEvent *xevent, GdkEvent *event, gpointer data)
       char *type = NULL;
       XClientMessageEvent *xmsg = (XClientMessageEvent *)xev;
 
-      type = XGetAtomName (GDK_DISPLAY (), xmsg->message_type);
+      type = XGetAtomName (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), xmsg->message_type);
 
       g_debug ("Got ClientMessage of type %s", type);
 
@@ -151,16 +151,16 @@ int main (int argc, char *argv[])
 
   gtk_init (&argc, &argv);
 
-  wm_type = XInternAtom (GDK_DISPLAY (), "_NET_WM_WINDOW_TYPE", False);
+  wm_type = XInternAtom (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), "_NET_WM_WINDOW_TYPE", False);
 
-  applet_id = XInternAtom (GDK_DISPLAY (), "_HILDON_APPLET_ID", False);
+  applet_id = XInternAtom (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), "_HILDON_APPLET_ID", False);
 
-  applet_type = XInternAtom (GDK_DISPLAY (),
+  applet_type = XInternAtom (gdk_x11_display_get_xdisplay (gdk_display_get_default ()),
 			    "_HILDON_WM_WINDOW_TYPE_HOME_APPLET", False);
 
-  pan_atom = XInternAtom (GDK_DISPLAY (), "_HILDON_CLIENT_MESSAGE_PAN", False);
+  pan_atom = XInternAtom (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), "_HILDON_CLIENT_MESSAGE_PAN", False);
 
-  view_id_atom = XInternAtom (GDK_DISPLAY (), "_HILDON_HOME_VIEW", False);
+  view_id_atom = XInternAtom (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), "_HILDON_HOME_VIEW", False);
   window  = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
   g_signal_connect (G_OBJECT (window), "button-release-event",
@@ -189,25 +189,25 @@ int main (int argc, char *argv[])
 
   gtk_widget_realize (window);
 
-  gdk_window_set_events (window->window,
-			 gdk_window_get_events (window->window)|
+  gdk_window_set_events (gtk_widget_get_window (window),
+			 gdk_window_get_events (gtk_widget_get_window (window))|
 			 GDK_BUTTON_PRESS_MASK   |
 			 GDK_BUTTON_RELEASE_MASK |
 			 GDK_POINTER_MOTION_MASK);
 
-  XChangeProperty (GDK_DISPLAY (), GDK_WINDOW_XID (window->window),
+  XChangeProperty (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), GDK_WINDOW_XID (gtk_widget_get_window (window)),
 		   wm_type, XA_ATOM, 32, PropModeReplace,
 		   (unsigned char *)&applet_type, 1);
 
-  XChangeProperty (GDK_DISPLAY (), GDK_WINDOW_XID (window->window),
+  XChangeProperty (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), GDK_WINDOW_XID (gtk_widget_get_window (window)),
 		   applet_id, XA_STRING, 8, PropModeReplace,
 		   (unsigned char *) "test-applet-id", 14);
 
-  XChangeProperty (GDK_DISPLAY (), GDK_WINDOW_XID (window->window),
+  XChangeProperty (gdk_x11_display_get_xdisplay (gdk_display_get_default ()), GDK_WINDOW_XID (gtk_widget_get_window (window)),
 		   view_id_atom, XA_CARDINAL, 32, PropModeReplace,
 		   (unsigned char *)&view_id, 1);
 
-  gdk_window_add_filter (window->window, x_event_filter_func, NULL);
+  gdk_window_add_filter (gtk_widget_get_window (window), x_event_filter_func, NULL);
 
   gtk_widget_show_all (window);
 
