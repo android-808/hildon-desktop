@@ -135,7 +135,7 @@ hd_launcher_page_init (HdLauncherPage *page)
 }
 
 static gboolean
-captured_event_cb (MxScrollView *scroll,
+captured_event_cb (MxKineticScrollView *scroll,
                  ClutterEvent *event,
                  HdLauncherPage *page)
 {
@@ -221,8 +221,8 @@ hd_launcher_page_constructed (GObject *object)
   clutter_container_add_actor (CLUTTER_CONTAINER (page), priv->empty_label);
   g_free (font_string);
 
-  priv->scroller = mx_scroll_view_new ();
-  mx_scroll_view_set_enable_gestures (MX_SCROLL_VIEW(priv->scroller), TRUE);
+  priv->scroller = mx_kinetic_scroll_view_new ();
+  //mx_scroll_view_set_enable_gestures (MX_SCROLL_VIEW(priv->scroller), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (page),
                                priv->scroller);
   clutter_actor_set_size(priv->scroller, HD_LAUNCHER_PAGE_WIDTH,

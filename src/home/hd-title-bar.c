@@ -293,6 +293,7 @@ hd_title_bar_init (HdTitleBar *bar)
     tidy_sub_texture_set_tiled(TIDY_SUB_TEXTURE(priv->title_bg), TRUE);
 #else
   /* TODO clutter_texture_set_repeat () ? */
+  // or clutter_actor_set_content_repeat (CLUTTER_ACTOR(priv->title_bg), CLUTTER_REPEAT_X_AXIS);?
 #endif
   clutter_container_add_actor(CLUTTER_CONTAINER(bar),
       CLUTTER_ACTOR(priv->title_bg));

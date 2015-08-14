@@ -664,6 +664,9 @@ static gboolean UnseenNotifications = FALSE;
 static ClutterTimeline *Fly_effect_timeline, *Zoom_effect_timeline;
 #ifdef MAEGO_DISABLED
 static ClutterAnimation *Fly_effect, *Zoom_effect;
+#else
+static ClutterTransitionGroup *Fly_effect, *Zoom_effect;
+static ClutterTransition *Fade_in_transition, *Fade_out_transition;
 #endif
 
 /*
@@ -2753,11 +2756,20 @@ hd_task_navigator_zoom_in (HdTaskNavigator * self, ClutterActor * win,
                     G_CALLBACK(rezoom), (Thumbnail *)apthumb);
 
   /* Clean up, exit and call @fun when then animation is finished. */
+#ifdef MAEGO_DISABLED
   add_effect_closure (Zoom_effect_timeline,
                       G_CALLBACK(zoom_in_complete),
                       CLUTTER_ACTOR (self), (Thumbnail *)apthumb);
   add_effect_closure (Zoom_effect_timeline,
                       G_CALLBACK(fun), win, funparam);
+#else
+// TEMPORARY SOLUTION:
+  add_effect_closure (Fade_out_transition,
+                      G_CALLBACK(zoom_in_complete),
+                      CLUTTER_ACTOR (self), (Thumbnail *)apthumb);
+  add_effect_closure (Fade_out_transition,
+                      G_CALLBACK(fun), win, funparam);
+#endif
   return;
 
 damage_control:
@@ -4168,6 +4180,17 @@ hd_task_navigator_init (HdTaskNavigator * self)
   /* Effect timelines */
   Fly_effect  = new_animation (&Fly_effect_timeline,  FLY_EFFECT_DURATION);
   Zoom_effect = new_animation (&Zoom_effect_timeline, ZOOM_EFFECT_DURATION);
+#else
+  Fade_in_transition = clutter_property_transition_new ("opacity");
+  clutter_timeline_set_duration (CLUTTER_TIMELINE (Fade_in_transition), ZOOM_EFFECT_DURATION);
+  clutter_transition_set_from (Fade_in_transition, G_TYPE_UINT, 0);
+  clutter_transition_set_to (Fade_in_transition, G_TYPE_UINT, 255);
+  
+  Fade_out_transition = clutter_property_transition_new ("opacity");
+  clutter_timeline_set_duration (CLUTTER_TIMELINE (Fade_out_transition), ZOOM_EFFECT_DURATION);
+  clutter_transition_set_from (Fade_out_transition, G_TYPE_UINT, 255);
+  clutter_transition_set_to (Fade_out_transition, G_TYPE_UINT, 0);
+  
 #endif
 
   /* Master pieces */
