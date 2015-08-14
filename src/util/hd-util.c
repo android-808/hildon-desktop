@@ -602,9 +602,9 @@ hd_util_get_actor_bounds(ClutterActor *actor, ClutterGeometry *geo, gboolean *is
        * is rotated, as we'll probably get it wrong. */
       clutter_actor_get_scale(it, &scalex, &scaley);
       clutter_actor_get_anchor_point(it, &anchorx, &anchory);
-      if (clutter_actor_get_rotation(it, CLUTTER_X_AXIS, 0, 0, 0)!=0 ||
-          clutter_actor_get_rotation(it, CLUTTER_Y_AXIS, 0, 0, 0)!=0 ||
-          clutter_actor_get_rotation(it, CLUTTER_Z_AXIS, 0, 0, 0)!=0)
+      if (clutter_actor_get_rotation_angle(it, CLUTTER_X_AXIS)!=0 ||
+          clutter_actor_get_rotation_angle(it, CLUTTER_Y_AXIS)!=0 ||
+          clutter_actor_get_rotation_angle(it, CLUTTER_Z_AXIS)!=0)
         valid = FALSE;
 
       clutter_actor_get_position(it, &px, &py);
