@@ -178,7 +178,9 @@ static ClutterActor *
 hd_clutter_cache_get_broken_texture()
 {
   ClutterColor col = {0xFF, 0x00, 0xFF, 0xFF};
-  ClutterActor *actor = clutter_rectangle_new_with_color(&col);
+  ClutterActor *actor = clutter_actor_new();
+  clutter_actor_set_background_color(actor, &col);
+
   return actor;
 }
 
