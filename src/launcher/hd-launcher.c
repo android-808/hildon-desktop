@@ -878,7 +878,8 @@ hd_launcher_transition_app_start (HdLauncherApp *item)
                                 GTK_STATE_NORMAL,
                                 &col);
       hd_cogl_color_to_clutter_color(&col, &cl_col);
-      app_image = clutter_rectangle_new_with_color(&cl_col);
+      app_image = clutter_actor_new ();
+      clutter_actor_set_background_color (app_image, &cl_col);
     }
 
   clutter_actor_set_size(app_image,

@@ -195,7 +195,8 @@ hd_launcher_tile_init (HdLauncherTile *tile)
   else
     {
       ClutterColor red = {0x7F, 0x20, 0x20, 0xA0};
-      priv->click_area = clutter_rectangle_new_with_color(&red);
+      priv->click_area = clutter_actor_new ();
+      clutter_actor_set_background_color (priv->click_area, &red);
     }
 
   clutter_actor_set_name(priv->click_area, "HdLauncherTile::click_area");

@@ -372,7 +372,8 @@ hd_home_view_constructed (GObject *object)
                                priv->applets_container);
 
   /* By default the background is a black rectangle */
-  priv->background = clutter_rectangle_new_with_color (&clr);
+  priv->background = clutter_actor_new ();
+  clutter_actor_set_background_color (priv->background, &clr);
   clutter_actor_set_name (priv->background, "HdHomeView::background");
   clutter_actor_set_size (priv->background,
                           HD_COMP_MGR_LANDSCAPE_WIDTH,
@@ -451,7 +452,8 @@ set_background_common (HdHomeView *hview, ClutterActor *new_bg)
   if (!new_bg)
     {
       /* Add a black background */
-      new_bg = clutter_rectangle_new_with_color (&clr);
+      new_bg = clutter_actor_new ();
+      clutter_actor_set_background_color (new_bg, &clr);
       clutter_actor_set_size (new_bg,
                               HD_COMP_MGR_LANDSCAPE_WIDTH,
                               HD_COMP_MGR_LANDSCAPE_HEIGHT);

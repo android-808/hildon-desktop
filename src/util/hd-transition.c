@@ -1385,7 +1385,8 @@ hd_transition_fade_and_rotate(gboolean first_part,
   if (first_part == goto_portrait)
     data->angle *= -1;
   /* Add the actor we use to dim out the screen */
-  data->particles[0] = g_object_ref(clutter_rectangle_new_with_color(&black));
+  data->particles[0] = g_object_ref(clutter_actor_new ());
+  clutter_actor_set_background_color (data->particles[0], &black);
   clutter_actor_set_name(data->particles[0], "black rotation background");
   clutter_actor_set_size(data->particles[0],
       hd_comp_mgr_get_current_screen_width (),
@@ -1399,7 +1400,8 @@ hd_transition_fade_and_rotate(gboolean first_part,
       /* Add the actor we use to mask out the landscape part of the screen in the
        * portrait half of the animation. This is pretty nasty, but as the home
        * applets aren't repositioned they can sometimes be seen in the background.*/
-       data->particles[1] = g_object_ref(clutter_rectangle_new_with_color(&black));
+       data->particles[1] = g_object_ref(clutter_actor_new ());
+       clutter_actor_set_background_color (data->particles[1], &black);
        clutter_actor_set_name(data->particles[1], "other rotation background");
        clutter_actor_set_position(data->particles[1],
            HD_COMP_MGR_LANDSCAPE_HEIGHT, 0);

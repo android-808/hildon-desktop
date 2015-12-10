@@ -827,7 +827,8 @@ load_image (char const * fname, guint aw, guint ah)
       static const ClutterColor bgcolor = { 0x00, 0x00, 0x00, 0xFF };
       ClutterActor *bg;
 
-      bg = clutter_rectangle_new_with_color (&bgcolor);
+      bg = clutter_actor_new ();
+      clutter_actor_set_background_color (bg, &bgcolor);
       clutter_actor_set_size (bg, vw, vh);
 
       if (dw < vw)
