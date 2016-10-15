@@ -287,13 +287,14 @@ hd_title_bar_init (HdTitleBar *bar)
   priv->title_bg = hd_clutter_cache_get_texture (HD_THEME_IMG_TITLE_BAR, TRUE);
   clutter_actor_set_clip (priv->title_bg,
                           title_bg_size.x, title_bg_size.y,
-                          title_bg_size.width, title_bg_size. height);
+                          title_bg_size.width, title_bg_size.height);
 #ifdef MAEGO_DISABLED
   if (TIDY_IS_SUB_TEXTURE(priv->title_bg))
     tidy_sub_texture_set_tiled(TIDY_SUB_TEXTURE(priv->title_bg), TRUE);
 #else
   /* TODO clutter_texture_set_repeat () ? */
   // or clutter_actor_set_content_repeat (CLUTTER_ACTOR(priv->title_bg), CLUTTER_REPEAT_X_AXIS);?
+  //clutter_actor_set_content_repeat (CLUTTER_ACTOR(priv->title_bg), CLUTTER_REPEAT_X_AXIS);
 #endif
   clutter_container_add_actor(CLUTTER_CONTAINER(bar),
       CLUTTER_ACTOR(priv->title_bg));
