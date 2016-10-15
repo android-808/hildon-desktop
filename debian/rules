@@ -2,7 +2,7 @@
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 
-// Temp Fix
+#Temp Fix
 DEB_BUILD_OPTIONS += nolauncher
 
 ifeq (,$(findstring noa11y,$(DEB_BUILD_OPTIONS)))
@@ -21,7 +21,7 @@ else
 CFLAGS += -O0
 endif
 
-// Temp Fix
+#Temp Fix
 //CFLAGS += -DG_DISABLE_CHECKS -Winline
 CFLAGS += -DG_DISABLE_CHECKS -Winline -Wno-deprecated-declarations -Wno-unused-but-set-variable
 
@@ -38,7 +38,7 @@ makebuilddir/hildon-desktop::
 	[ -f configure ] || ./autogen.sh
 
 binary-install/hildon-desktop::
-// Temp Fix
+# Temp Fix
 #	dh_maemolauncher
 #	dh_installxsession -u 'post 20'
 #	dh_installxsession --init-script='hildon-desktop-wait' -u 'post 21'
