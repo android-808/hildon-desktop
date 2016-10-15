@@ -27,6 +27,7 @@
 
 #include "hd-clutter-cache.h"
 #include "hd-render-manager.h"
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 struct _HdClutterCachePrivate
 {
@@ -95,8 +96,11 @@ hd_clutter_cache_get_real_texture(const char *filename, gboolean from_theme)
   HdClutterCache *cache = hd_get_clutter_cache();
   gint i;
   ClutterActor *texture, *actor;
+  ClutterContent *content;
+  GdkPixbuf* pixbuf;
   const char *filename_real = filename;
   char *filename_alloc = 0;
+  GError *error = 0;
 
   if (!cache)
     return 0;
@@ -132,8 +136,8 @@ hd_clutter_cache_get_real_texture(const char *filename, gboolean from_theme)
         }
     }
 
-  texture = clutter_texture_new_from_file(filename_real, 0);
-  if (!texture)
+  pixbuf = gdk_pixbuf_new_from_file(filename_real,&error);
+  if (!pixbuf)
     {
       if (filename_alloc)
         g_free(filename_alloc);
@@ -154,8 +158,8 @@ hd_clutter_cache_get_real_texture(const char *filename, gboolean from_theme)
       strcat(filename_alloc, filename);
       filename_real = filename_alloc;
 
-      texture = clutter_texture_new_from_file(filename_real, 0);
-      if (!texture)
+      pixbuf = gdk_pixbuf_new_from_file(filename_real,&error);
+      if (!pixbuf)
         {
           if (filename_alloc)
             g_free(filename_alloc);
@@ -163,11 +167,25 @@ hd_clutter_cache_get_real_texture(const char *filename, gboolean from_theme)
         }
     }
 
+  content = clutter_image_new ();
+  clutter_image_set_data(CLUTTER_IMAGE(content),
+                         gdk_pixbuf_get_pixels(pixbuf),
+                         gdk_pixbuf_get_has_alpha (pixbuf) ? COGL_PIXEL_FORMAT_RGBA_8888 : COGL_PIXEL_FORMAT_RGB_888,
+                         gdk_pixbuf_get_width (pixbuf),
+                         gdk_pixbuf_get_height (pixbuf),
+                         gdk_pixbuf_get_rowstride(pixbuf),
+                         &error);
+  
+  texture = clutter_actor_new();
   clutter_actor_set_name(texture, filename_real);
+  clutter_actor_set_content (texture, content);
+  clutter_actor_set_size (texture, gdk_pixbuf_get_width (pixbuf), gdk_pixbuf_get_height (pixbuf));
   clutter_container_add_actor(CLUTTER_CONTAINER(cache), texture);
 
   if (filename_alloc)
     g_free(filename_alloc);
+
+  g_object_unref (pixbuf);
 
   return texture;
 }
@@ -206,14 +224,13 @@ hd_clutter_cache_get_texture_for_area(const char *filename,
 {
   gboolean extend_x, extend_y;
   gint low_x, low_y, high_x, high_y;
-  ClutterTexture *texture = 0;
+  ClutterActor *texture = 0;
   ClutterGroup *group = 0;
   ClutterGeometry geo;
-  gint x,y;
+  gfloat x,y;
   gfloat gw, gh;
 
-  texture = CLUTTER_TEXTURE(hd_clutter_cache_get_real_texture(filename,
-                                                              from_theme));
+  texture = hd_clutter_cache_get_real_texture(filename, from_theme);
   if (!texture)
     {
       ClutterActor *actor = hd_clutter_cache_get_broken_texture();
@@ -223,7 +240,7 @@ hd_clutter_cache_get_texture_for_area(const char *filename,
       return actor;
     }
 
-  clutter_actor_get_size(CLUTTER_ACTOR(texture), &gw, &gh);
+  clutter_actor_get_size(texture, &gw, &gh);
   geo.x = 0;
   geo.y = 0;
   geo.width = gw;
@@ -238,7 +255,8 @@ hd_clutter_cache_get_texture_for_area(const char *filename,
       /* ignore the contents of 'texture' as it will be in our cache */
       ClutterActor *actor =
           hd_clutter_cache_get_texture(filename, from_theme);
-      clutter_texture_get_base_size (CLUTTER_TEXTURE(actor), &x, &y);
+      ClutterContent *content = clutter_actor_get_content(actor);
+      clutter_content_get_preferred_size (content, &x, &y);
       if (x > geo.width || y > geo.height)
         {
           clutter_actor_set_size (actor, geo.width, geo.height);
@@ -269,6 +287,13 @@ hd_clutter_cache_get_texture_for_area(const char *filename,
       low_y = geo.y;
       high_y = geo.y + geo.height;
     }
+
+  // The following create a padded box around the area specified, if there is some space on either side,
+  // otherwise it seems to stitch 3 copies of the image together.
+  // It is *only* used by hd_decor_create_actors AFAIK.
+  // I imagine it would be used by hd_decor_create_actors as part of c->image_filename "if" block.
+  // Normal cases can use other texture routine without specifying area, the only benefit to this
+  // could be less texture stretching as you stitch 3 copies together.
 
   for (y=0;y<3;y++)
     for (x=0;x<3;x++)
@@ -320,15 +345,23 @@ hd_clutter_cache_get_texture_for_area(const char *filename,
 
         if (geot.width>0 && geot.height>0)
           {
-            tex = clutter_texture_new_from_actor(CLUTTER_ACTOR(texture));
-            clutter_actor_set_clip(CLUTTER_ACTOR(tex),
-                                   geot.x, geot.y,
-                                   geot.width, geot.height);
-            if (x==1 || y==1)
-              clutter_texture_set_repeat(CLUTTER_TEXTURE(tex), x, y);
-            clutter_actor_set_position(tex, pos.x, pos.y);
-            clutter_actor_set_size(tex, pos.width, pos.height);
-            clutter_container_add_actor(CLUTTER_CONTAINER(group), tex);
+            tex = clutter_actor_new();
+            clutter_actor_set_content (tex, clutter_actor_get_content(texture));
+            
+            //tex = clutter_texture_new_from_actor(CLUTTER_ACTOR(texture));
+            //clutter_actor_set_clip(CLUTTER_ACTOR(tex),
+            //                       geot.x, geot.y,
+            //                       geot.width, geot.height);
+            if (x==1 && y==1)
+              clutter_actor_set_content_repeat (CLUTTER_ACTOR(tex), CLUTTER_REPEAT_BOTH);
+            else if (x==1 && y==0)
+              clutter_actor_set_content_repeat (CLUTTER_ACTOR(tex), CLUTTER_REPEAT_X_AXIS);
+            else if (x==0 && y==1)
+              clutter_actor_set_content_repeat (CLUTTER_ACTOR(tex), CLUTTER_REPEAT_Y_AXIS);
+
+            clutter_actor_set_position (tex, pos.x, pos.y);
+            clutter_actor_set_size (tex, pos.width, pos.height);
+            clutter_actor_add_child (CLUTTER_ACTOR(group), tex);
           }
       }
 
@@ -340,15 +373,29 @@ reload_texture_cb (ClutterActor *child,
                    gpointer      data)
 {
   gchar *filename;
-  if (!CLUTTER_IS_TEXTURE(child))
+  GdkPixbuf *pixbuf;
+  GError *error = 0;
+  if (!CLUTTER_IS_IMAGE (clutter_actor_get_content(child)))
     return;
 
   /* filename is set in the child's name. clutter_texture_set_from_file sets
-   * the anme to this string, but the string is from the actor in the first
+   * the name to this string, but the string is from the actor in the first
    * place and it just breaks... */
   filename = g_strdup(clutter_actor_get_name(child));
-  clutter_texture_set_from_file(CLUTTER_TEXTURE(child), filename, 0);
+  pixbuf = gdk_pixbuf_new_from_file(filename, &error);
+  if(pixbuf)
+  {
+    clutter_image_set_data (CLUTTER_IMAGE(clutter_actor_get_content(child)),
+                            gdk_pixbuf_get_pixels(pixbuf),
+                            gdk_pixbuf_get_has_alpha (pixbuf) ? COGL_PIXEL_FORMAT_RGBA_8888 : COGL_PIXEL_FORMAT_RGB_888,
+                            gdk_pixbuf_get_width (pixbuf),
+                            gdk_pixbuf_get_height (pixbuf),
+                            gdk_pixbuf_get_rowstride(pixbuf),
+                            &error);
+  }
+
   g_free(filename);
+  g_object_unref (pixbuf);
 }
 
 void
