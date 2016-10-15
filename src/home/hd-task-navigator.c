@@ -665,7 +665,7 @@ static ClutterTimeline *Fly_effect_timeline, *Zoom_effect_timeline;
 #ifdef MAEGO_DISABLED
 static ClutterAnimation *Fly_effect, *Zoom_effect;
 #else
-static ClutterTransitionGroup *Fly_effect, *Zoom_effect;
+//static ClutterTransitionGroup *Fly_effect, *Zoom_effect;
 static ClutterTransition *Fade_in_transition, *Fade_out_transition;
 #endif
 
@@ -1626,13 +1626,11 @@ reanchor_on_resize (ClutterActor * actor, gpointer unused, gpointer grv)
 /* %ClutterEffectCompleteFunc:s {{{ */
 /* #ClutterEffectCompleteFunc to hide @other when the effect is complete.
  * Used when @actor fades in in the top of @other. */
-#ifdef MAEGO_DISABLED
 static void
 hide_when_complete (ClutterActor * actor, ClutterActor * other)
 {
   clutter_actor_hide (other);
 }
-#endif
 
 /* Hide @actor and only show it after the flying animation finished.
  * Used when a new thing is created but you need to move other things
@@ -2729,6 +2727,24 @@ hd_task_navigator_zoom_in (HdTaskNavigator * self, ClutterActor * win,
 #ifdef MAEGO_DISABLED
   clutter_effect_fade (Zoom_effect, apthumb->titlebar, 255, NULL, NULL);
   clutter_effect_fade (Zoom_effect, apthumb->plate,      0, NULL, NULL);
+#else
+  clutter_actor_remove_transition(CLUTTER_ACTOR(apthumb->titlebar), "fade-in");
+  clutter_actor_remove_transition(CLUTTER_ACTOR(apthumb->plate), "fade-out");
+  clutter_actor_add_transition (apthumb->titlebar, "fade-in", Fade_in_transition);
+  clutter_actor_add_transition (apthumb->plate, "fade-out", Fade_out_transition);
+
+// OR
+/*  ClutterTransition *transition = clutter_property_transition_new ("opacity");
+  clutter_timeline_set_duration (CLUTTER_TIMELINE (transition), ZOOM_EFFECT_DURATION);
+  clutter_transition_set_from (transition, G_TYPE_UINT, 255);
+  clutter_transition_set_to (transition, G_TYPE_UINT, 0);
+  clutter_transition_set_animatable (transition, CLUTTER_ANIMATABLE(apthumb->plate));
+  clutter_timeline_start (CLUTTER_TIMELINE (transition));*/
+// OR
+  clutter_transition_set_animatable (Fade_in_transition, CLUTTER_ANIMATABLE(apthumb->titlebar));
+  clutter_transition_set_animatable (Fade_out_transition, CLUTTER_ANIMATABLE(apthumb->plate));
+  clutter_timeline_start (CLUTTER_TIMELINE (Zoom_effect_timeline));
+
 #endif
 
   /* Fade out our notification smoothly if we have one. */
@@ -2764,11 +2780,10 @@ hd_task_navigator_zoom_in (HdTaskNavigator * self, ClutterActor * win,
   add_effect_closure (Zoom_effect_timeline,
                       G_CALLBACK(fun), win, funparam);
 #else
-// TEMPORARY SOLUTION:
-  add_effect_closure (Fade_out_transition,
+  add_effect_closure (Zoom_effect_timeline,
                       G_CALLBACK(zoom_in_complete),
                       CLUTTER_ACTOR (self), (Thumbnail *)apthumb);
-  add_effect_closure (Fade_out_transition,
+  add_effect_closure (Zoom_effect_timeline,
                       G_CALLBACK(fun), win, funparam);
 #endif
   return;
@@ -2824,6 +2839,11 @@ hd_task_navigator_zoom_out (HdTaskNavigator * self, ClutterActor * win,
 #ifdef MAEGO_DISABLED
   clutter_effect_scale (Zoom_effect, Scroller, 1, 1, NULL, NULL);
   clutter_effect_move  (Zoom_effect, Scroller, 0, 0, NULL, NULL);
+#else
+  clutter_actor_set_easing_mode (Scroller, CLUTTER_LINEAR);
+  clutter_actor_set_easing_duration (Scroller, ZOOM_EFFECT_DURATION);
+  clutter_actor_set_scale (Scroller, 1.0f, 1.0f);
+  clutter_actor_set_position (Scroller, 0.0, 0.0);
 #endif
 
   /* Crossfade .plate with .titlebar.  (Earlier i said "It's okay to leave
@@ -2835,10 +2855,19 @@ hd_task_navigator_zoom_out (HdTaskNavigator * self, ClutterActor * win,
   clutter_effect_fade (Zoom_effect, apthumb->titlebar,   0,
                        G_CALLBACK(hide_when_complete),
                        apthumb->titlebar);
+#else
+  clutter_transition_set_animatable (Fade_out_transition, CLUTTER_ANIMATABLE(apthumb->titlebar));
+  g_signal_connect (Fade_out_transition, "completed",
+                    G_CALLBACK (hide_when_complete),
+                    apthumb->titlebar);
+
 #endif
   clutter_actor_set_opacity (apthumb->plate,      0);
 #ifdef MAEGO_DISABLED
   clutter_effect_fade (Zoom_effect, apthumb->plate,    255, NULL, NULL);
+#else
+  clutter_transition_set_animatable (Fade_in_transition, CLUTTER_ANIMATABLE(apthumb->plate));
+  clutter_timeline_start (CLUTTER_TIMELINE (Zoom_effect_timeline));
 #endif
 
   /* Fade in .notwin smoothly. */
@@ -4191,7 +4220,13 @@ hd_task_navigator_init (HdTaskNavigator * self)
   clutter_timeline_set_duration (CLUTTER_TIMELINE (Fade_out_transition), ZOOM_EFFECT_DURATION);
   clutter_transition_set_from (Fade_out_transition, G_TYPE_UINT, 255);
   clutter_transition_set_to (Fade_out_transition, G_TYPE_UINT, 0);
-  
+
+  Zoom_effect_timeline = CLUTTER_TIMELINE (clutter_transition_group_new());
+  clutter_timeline_set_duration (CLUTTER_TIMELINE (Zoom_effect_timeline), ZOOM_EFFECT_DURATION);
+  clutter_transition_group_add_transition (CLUTTER_TRANSITION_GROUP (Zoom_effect_timeline), Fade_in_transition);
+  clutter_transition_group_add_transition (CLUTTER_TRANSITION_GROUP (Zoom_effect_timeline), Fade_out_transition);
+
+  Fly_effect_timeline = clutter_timeline_new(FLY_EFFECT_DURATION); 
 #endif
 
   /* Master pieces */
@@ -4199,7 +4234,7 @@ hd_task_navigator_init (HdTaskNavigator * self)
   SystemFont = hd_gtk_style_resolve_logical_font ("SystemFont");
   SmallSystemFont = hd_gtk_style_resolve_logical_font ("SmallSystemFont");
   hd_gtk_style_resolve_logical_color (&DefaultTextColor,
-                                      "DefaultTextColor");
+                                      "theme_text_color");
   hd_gtk_style_resolve_logical_color (&NotificationTextColor,
                                       "NotificationTextColor");
   hd_gtk_style_resolve_logical_color (&NotificationSecondaryTextColor,
