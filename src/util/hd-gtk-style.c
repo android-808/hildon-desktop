@@ -68,12 +68,12 @@ hd_gtk_style_init (void)
 
 static void
 hd_gtk_style_to_clutter_color(CoglColor          *dst,
-                              const GdkColor     *src)
+                              const GdkRGBA     *src)
 {
-  cogl_color_set_from_4f (dst,
-                          CLAMP ((src->red   / 65535.0), 0.0f, 1.0f),
-                          CLAMP ((src->green / 65535.0), 0.0f, 1.0f),
-                          CLAMP ((src->blue  / 65535.0), 0.0f, 1.0f),
+  cogl_color_init_from_4f (dst,
+                          CLAMP ((src->red), 0.0f, 1.0f),
+                          CLAMP ((src->green), 0.0f, 1.0f),
+                          CLAMP ((src->blue), 0.0f, 1.0f),
                           1.0f);
 }
 
@@ -84,31 +84,31 @@ hd_gtk_style_get_color_component (HDGtkWidgetSingleton   widget_id,
 				  CoglColor             *color)
 {
   GtkWidget *widget;
-  GtkStyle *style;
-  GdkColor gtk_color = { 0, };
+  GtkStyleContext *sc;
+  GdkRGBA gtk_color = { 0.0f, };
 
   g_return_if_fail (widget_id < HD_GTK_WIDGET_SINGLETON_COUNT);
-  g_return_if_fail (state < (sizeof (style->fg)/sizeof (GdkColor)));
+//  g_return_if_fail (state < (sizeof (style->fg)/sizeof (GdkColor)));
 
   widget = gtk_widget_singletons[widget_id];
-  style = gtk_widget_get_style (widget);
+  sc = gtk_widget_get_style_context (widget);
 
-  if (!style) {
-    g_critical("%s: gtk_widget_get_style returned NULL", __FUNCTION__);
+  if (!sc) {
+    g_critical("%s: gtk_widget_get_style_context returned NULL", __FUNCTION__);
     return;
   }
 
   switch ((int)component)
     {
     case HD_GTK_STYLE_FG:
-      gtk_color = style->fg[state];
+      gtk_style_context_get_color (sc, state, &gtk_color);
       break;
 
     case HD_GTK_STYLE_BG:
-      gtk_color = style->bg[state];
+      gtk_style_context_get_background_color (sc, state, &gtk_color);
       break;
 
-    case HD_GTK_STYLE_LIGHT:
+/*    case HD_GTK_STYLE_LIGHT:
       gtk_color = style->light[state];
       break;
 
@@ -118,15 +118,15 @@ hd_gtk_style_get_color_component (HDGtkWidgetSingleton   widget_id,
 
     case HD_GTK_STYLE_MID:
       gtk_color = style->mid[state];
-      break;
+      break;*/
 
     case HD_GTK_STYLE_TEXT:
-      gtk_color = style->text[state];
+      gtk_style_context_get_color (sc, state, &gtk_color);
       break;
 
-    case HD_GTK_STYLE_BASE:
+/*    case HD_GTK_STYLE_BASE:
       gtk_color = style->base[state];
-      break;
+      break;*/
 
     default:
       g_assert_not_reached ();
@@ -225,15 +225,23 @@ char *
 hd_gtk_style_get_font_string (HDGtkWidgetSingleton  widget_id)
 {
   GtkWidget *widget;
-  GtkStyle *style;
+  GtkStyleContext *sc;
+  PangoFontDescription *font_desc = 0; 
+  gchar *font_string;
 
   g_return_val_if_fail (widget_id < HD_GTK_WIDGET_SINGLETON_COUNT, NULL);
 
   widget = gtk_widget_singletons[widget_id];
   g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
-  style = gtk_widget_get_style (widget);
 
-  return pango_font_description_to_string (style->font_desc);
+  sc = gtk_widget_get_style_context(widget);
+  gtk_style_context_get(sc, GTK_STATE_FLAG_NORMAL, GTK_STYLE_PROPERTY_FONT, font_desc, NULL);
+  g_return_val_if_fail(font_desc, NULL);
+
+  font_string = pango_font_description_to_string (font_desc);
+  pango_font_description_free (font_desc);
+
+  return font_string;
 }
 
 /* Fonts and colors {{{ */
@@ -242,13 +250,15 @@ void
 hd_gtk_style_resolve_logical_color (CoglColor * color,
                                     const gchar * logical_name)
 {
-  GtkStyle *style;
-  GdkColor gtk_color;
+  GtkStyleContext *sc;
+  GtkWidgetPath *widget_path;
+  GdkRGBA gtk_color;
 
-  style = gtk_rc_get_style_by_paths (gtk_settings_get_default (),
-                                     NULL, NULL,
-                                     GTK_TYPE_WIDGET);
-  if (!style || !gtk_style_lookup_color (style, logical_name, &gtk_color))
+  sc = gtk_style_context_new();
+  widget_path = gtk_widget_path_new ();
+  gtk_widget_path_append_type (widget_path, GTK_TYPE_WIDGET);
+  gtk_style_context_set_path (sc, widget_path);
+  if (!gtk_style_context_lookup_color(sc, logical_name, &gtk_color))
     { /* Fall back to white. */
       g_critical ("%s: unknown color", logical_name);
       memset (&gtk_color, 0x7f, sizeof (gtk_color));
