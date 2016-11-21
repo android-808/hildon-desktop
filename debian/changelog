@@ -1,3 +1,10 @@
+hildon-desktop3 (3.0.0-pre1) unstable; urgency=low
+
+  * Rename source to allow original hildon-desktop to coexist.
+  * Initial work to port to GTK3
+
+ -- Robert Irvin <android_808@hotmail.com>  Mon, 21 Nov 2016 21:03:21 +0000
+
 hildon-desktop (1:2.2.141-4) unstable; urgency=low
 
   * Register key-schemas to gconf, otherwise keyboard shortcuts are lost.
