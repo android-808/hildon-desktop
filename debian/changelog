@@ -1,7 +1,7 @@
-hildon-desktop3 (3.0.0-pre1) unstable; urgency=low
+hildon-desktop (3.0.0-pre1) unstable; urgency=low
 
-  * Rename source to allow original hildon-desktop to coexist.
   * Initial work to port to GTK3
+  * Depend on libhildon-3 and libhildondekstop-3
 
  -- Robert Irvin <android_808@hotmail.com>  Mon, 21 Nov 2016 21:03:21 +0000
 
