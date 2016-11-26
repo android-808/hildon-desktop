@@ -21,16 +21,16 @@ test_do_not_disturb_CFLAGS = `pkg-config --cflags gtk+-3.0`
 test_do_not_disturb_LDFLAGS = `pkg-config --libs gtk+-3.0`
 
 test_large_note_SOURCES = test-large-note.c
-test_large_note_CFLAGS = `pkg-config --cflags gtk+-3.0 hildon-1`
-test_large_note_LDFLAGS = `pkg-config --libs gtk+-3.0 hildon-1`
+test_large_note_CFLAGS = `pkg-config --cflags gtk+-3.0 hildon-3`
+test_large_note_LDFLAGS = `pkg-config --libs gtk+-3.0 hildon-3`
 
 test_portrait_win_SOURCES = test-portrait-win.c
-test_portrait_win_CFLAGS = `pkg-config --cflags hildon-1`
-test_portrait_win_LDFLAGS = `pkg-config --libs hildon-1`
+test_portrait_win_CFLAGS = `pkg-config --cflags hildon-3`
+test_portrait_win_LDFLAGS = `pkg-config --libs hildon-3`
 
 test_portrait_dlg_SOURCES = test-portrait-dlg.c
-test_portrait_dlg_CFLAGS = `pkg-config --cflags hildon-1`
-test_portrait_dlg_LDFLAGS = `pkg-config --libs hildon-1`
+test_portrait_dlg_CFLAGS = `pkg-config --cflags hildon-3`
+test_portrait_dlg_LDFLAGS = `pkg-config --libs hildon-3`
 
 test_signals_SOURCES = test-signals.c
 test_signals_CFLAGS = `pkg-config --cflags gtk+-3.0 dbus-1`
@@ -46,12 +46,12 @@ test_live_bg_CFLAGS = `pkg-config --cflags x11 xrender`
 test_live_bg_LDFLAGS = `pkg-config --libs x11 xrender`
 
 test_winstack_SOURCES = test-large-window-stack.c
-test_winstack_CFLAGS = `pkg-config --cflags hildon-1`
-test_winstack_LDFLAGS = `pkg-config --libs hildon-1`
+test_winstack_CFLAGS = `pkg-config --cflags hildon-3`
+test_winstack_LDFLAGS = `pkg-config --libs hildon-3`
 
 test_non_compositing_SOURCES = test-non-compositing.c
-test_non_compositing_CFLAGS = `pkg-config --cflags hildon-1`
-test_non_compositing_LDFLAGS = `pkg-config --libs hildon-1 --libs x11`
+test_non_compositing_CFLAGS = `pkg-config --cflags hildon-3`
+test_non_compositing_LDFLAGS = `pkg-config --libs hildon-3 --libs x11`
 
 test_no_gtk_SOURCES = test-no-gtk.c
 test_no_gtk_CFLAGS = `pkg-config --cflags x11` 

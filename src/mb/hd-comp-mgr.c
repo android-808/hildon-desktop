@@ -59,6 +59,7 @@
 #include <mce/dbus-names.h>
 #endif
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
